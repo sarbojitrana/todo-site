@@ -1,10 +1,16 @@
-let todos = [];
+
+const { readTodos, writeTodos } = require('../services/todoStore');
+const todos = readTodos();
+writeTodos(todos); 
+
 
 const getTodos = (req, res, next) => {
+    const todos = readTodos();
     res.status(200).json({ tasks: todos });
 };
 
 const createTodo = (req, res, next) => {
+    const todos = readTodos();
     let newtask = req.body;
 
     if (!newtask || !newtask.title) {
@@ -13,10 +19,15 @@ const createTodo = (req, res, next) => {
 
     newtask.id = todos.length + 1;
     todos.push(newtask);
+    writeTodos(todos);
+    
     res.status(201).json({ message: 'Task added', task: newtask });
 };
 
 const updateTodo = (req, res, next) => {
+
+    const todos = readTodos();
+
     let taskid = parseInt(req.params.id);
     let updatedtask = req.body;
 
@@ -26,10 +37,14 @@ const updateTodo = (req, res, next) => {
     }
 
     todos[index] = { ...todos[index], ...updatedtask };
+
+    writeTodos(todos) ;
     res.status(200).json({ message: 'Task updated', task: todos[index] });
 };
 
 const deleteTodo = (req, res, next) => {
+    const todos = readTodos();
+
     let taskid = parseInt(req.params.id);
     const index = todos.findIndex(t => t.id === taskid);
 
@@ -38,6 +53,8 @@ const deleteTodo = (req, res, next) => {
     }
 
     const deleted = todos.splice(index, 1);
+    writeTodos(todos);
+
     res.status(200).json({ message: 'Task deleted', task: deleted[0] });
 };
 
