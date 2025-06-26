@@ -1,61 +1,56 @@
+const Todo = require('../models/Todo');
 
-const { readTodos, writeTodos } = require('../services/todoStore');
-const todos = readTodos();
-writeTodos(todos); 
-
-
-const getTodos = (req, res, next) => {
-    const todos = readTodos();
-    res.status(200).json({ tasks: todos });
+const getTodos = async (req, res, next) => {
+    try {
+        const todos = await Todo.find().sort({ createdAt: -1 });
+        res.status(200).json(todos); 
+    } catch (err) {
+        next(err);
+    }
 };
 
-const createTodo = (req, res, next) => {
-    const todos = readTodos();
-    let newtask = req.body;
-
-    if (!newtask || !newtask.title) {
-        return res.status(400).json({ message: 'Task must have a title' });
+const createTodo = async (req, res, next) => {
+    try {
+        const { title, dueDate } = req.body;
+        const newTask = await Todo.create({ title, dueDate });
+        res.status(201).json(newTask);
+    } catch (err) {
+        next(err);
     }
-
-    newtask.id = todos.length + 1;
-    todos.push(newtask);
-    writeTodos(todos);
-    
-    res.status(201).json({ message: 'Task added', task: newtask });
 };
 
-const updateTodo = (req, res, next) => {
+// PUT update a todo
+const updateTodo = async (req, res, next) => {
+    try {
+        const { title } = req.body;
+        const updatedTask = await Todo.findByIdAndUpdate(
+            req.params.id,
+            { title },
+            { new: true } 
+        );
 
-    const todos = readTodos();
+        if (!updatedTask) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
 
-    let taskid = parseInt(req.params.id);
-    let updatedtask = req.body;
-
-    let index = todos.findIndex(t => t.id === taskid);
-    if (index === -1) {
-        return res.status(404).json({ message: 'Task not found' });
+        res.status(200).json(updatedTask);
+    } catch (err) {
+        next(err);
     }
-
-    todos[index] = { ...todos[index], ...updatedtask };
-
-    writeTodos(todos) ;
-    res.status(200).json({ message: 'Task updated', task: todos[index] });
 };
 
-const deleteTodo = (req, res, next) => {
-    const todos = readTodos();
+const deleteTodo = async (req, res, next) => {
+    try {
+        const deletedTask = await Todo.findByIdAndDelete(req.params.id);
 
-    let taskid = parseInt(req.params.id);
-    const index = todos.findIndex(t => t.id === taskid);
+        if (!deletedTask) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
 
-    if (index === -1) {
-        return res.status(404).json({ message: 'Task not found' });
+        res.status(200).json({ message: 'Task deleted', task: deletedTask });
+    } catch (err) {
+        next(err);
     }
-
-    const deleted = todos.splice(index, 1);
-    writeTodos(todos);
-
-    res.status(200).json({ message: 'Task deleted', task: deleted[0] });
 };
 
 module.exports = {
